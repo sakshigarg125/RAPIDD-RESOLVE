@@ -1,0 +1,5 @@
+node_modules/
+smart_city/node_modules/
+smart_city_backend/node_modules/
+.env
+smart_city_backend/.env

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart City Complaint System</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/admin.js"></script>
+</head>
+
+<body class="admin-theme">
+
+    <!-- Dashboard Gateway Passed -->
+
+    <!-- System Layout -->
+    <aside class="sidebar">
+        <h2>Smart City</h2>
+        <ul class="nav-links">
+            <li><a href="#" class="active" onclick="switchView('dashboard')">Overview Stats</a></li>
+            <li><a href="#" onclick="switchView('departments')">Manage Departments</a></li>
+            <li><a href="#" onclick="switchView('users')">Manage Users (Citizens)</a></li>
+            <li><a href="#" onclick="switchView('analytics')">Reports & Analytics</a></li>
+            <li style="margin-top: auto;"><a href="#" onclick="logout(); return false;"
+                    style="color: var(--danger);">Logout Session</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h1 style="font-size: 1.6rem; color: var(--text-light);">Admin Gateway</h1>
+                <p style="color: var(--text-muted); margin-top: 5px;">Managing Global Infrastructure and User Integrity
+                </p>
+            </div>
+            <div class="user-info">
+                <!-- Dark Mode Toggle -->
+                <button id="darkModeToggle" onclick="toggleDarkMode()" style="background: none; border: 2px solid #e2e8f0; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; font-size: 1.2rem; transition: all 0.3s ease; margin-right: 10px;" title="Toggle Dark Mode">
+                    🌙
+                </button>
+                <div class="notification-icon" id="notificationIcon" onclick="toggleNotificationDropdown()">
+                    🔔
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-header">
+                            <span class="notification-title">Notifications</span>
+                            <button onclick="markAllAsRead()" style="background: none; border: none; color: var(--accent-admin); cursor: pointer; font-size: 12px;">Mark all read</button>
+                        </div>
+                        <div class="notification-list" id="notificationList">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <span style="font-weight: 600;" id="adminName">System Admin</span>
+                <div class="avatar" id="adminAvatar" style="background-color: var(--accent-admin); color: #121212;">A
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Engine -->
+        <div id="view-dashboard" class="view-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Global Complaints</h3>
+                    <div class="value" id="totalGlobal" style="font-size: 2.5rem; font-weight: bold;">1,248</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Pending Global Actions</h3>
+                    <div class="value" id="pendingGlobal"
+                        style="font-size: 2.5rem; font-weight: bold; color: var(--warning);">142</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Resolution Time</h3>
+                    <div class="value" style="font-size: 2.5rem; font-weight: bold; color: var(--accent-admin);">48 hrs
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 style="color: var(--accent-admin); font-size: 1.25rem;">Unassigned Complaints</h3>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-action" onclick="refreshUnassignedComplaints()">🔄 Refresh</button>
+                        <button class="btn-action" onclick="filterUrgent()">🔴 View Urgent Only</button>
+                    </div>
+                </div>
+                <div class="complaint-filters" style="margin-bottom: 15px;">
+                    <button class="priority-filter-btn active" onclick="filterComplaints('all', this)">All</button>
+                    <button class="priority-filter-btn" data-priority="urgent" onclick="filterComplaints('urgent', this)">🔴 Urgent</button>
+                    <button class="priority-filter-btn" data-priority="high" onclick="filterComplaints('high', this)">🟠 High</button>
+                    <button class="priority-filter-btn" data-priority="medium" onclick="filterComplaints('medium', this)">🟡 Medium</button>
+                    <button class="priority-filter-btn" data-priority="low" onclick="filterComplaints('low', this)">🟢 Low</button>
+                </div>
+                
+                <!-- Search Bar -->
+                <div style="margin-bottom: 15px; display: flex; gap: 10px;">
+                    <input type="text" id="complaintSearch" placeholder="🔍 Search by ID, location, or department..." 
+                           style="flex: 1; padding: 10px 15px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 0.95rem;">
+                    <select id="statusFilter" onchange="applyFilters()" style="padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px;">
+                        <option value="">All Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                    <select id="dateFilter" onchange="applyFilters()" style="padding: 10px; border: 2px solid #e2e8f0; border-radius: 8px;">
+                        <option value="">Any Date</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                    <button onclick="applyFilters()" class="btn-action">Search</button>
+                    <button onclick="clearFilters()" class="btn-action" style="background: #64748b;">Clear</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Complaint ID</th>
+                            <th>Priority</th>
+                            <th>Citizen Info</th>
+                            <th>Category</th>
+                            <th>Location</th>
+                            <th>Filed Date</th>
+                            <th>Action (Assign)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unassignedTableBody">
+                        <!-- Complaints will be loaded here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-departments" class="view-section" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 style="color: var(--accent-admin); font-size: 1.25rem;">Manage Departments & Assignment</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn-action" style="background: var(--accent-admin); color: #121212;" onclick="openAddOfficerModal()">+ Add
+                            Officer</button>
+                        <button class="btn-action" style="background: #10b981; color: white;" onclick="seedDefaultOfficers()">🌱 Seed Default Officers</button>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Officer Name</th>
+                            <th>Department</th>
+                            <th>Active Workload</th>
+                            <th>Resolution Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="departmentsTableBody">
+                        <tr>
+                            <td>Officer Mikes (OM-41)</td>
+                            <td>Civil Works (Roads)</td>
+                            <td><span style="color: var(--warning); font-weight:bold;">12 complaints</span></td>
+                            <td>94% within 48h</td>
+                            <td><button class="btn-action">Reassign Tasks</button></td>
+                        </tr>
+                        <tr>
+                            <td>Officer Jenny (JL-99)</td>
+                            <td>Waste Management</td>
+                            <td><span style="color: var(--success); font-weight:bold;">2 complaints</span></td>
+                            <td>98% within 24h</td>
+                            <td><button class="btn-action">Reassign Tasks</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-users" class="view-section" style="display:none;">
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 style="color: var(--accent-admin); font-size: 1.25rem;">Citizen Management</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Citizen Name</th>
+                            <th>Joined Date</th>
+                            <th>Reports Lodged</th>
+                            <th>Account Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td>Sarah Jenkins</td>
+                            <td>Jan 14, 2026</td>
+                            <td>12 Validated</td>
+                            <td><span style="color: var(--success);">✔ Active</span></td>
+                            <td><button class="btn-action block" onclick="toggleBlock(this)">Block User</button></td>
+                        </tr>
+                        <tr>
+                            <td>David L. Spam</td>
+                            <td>Feb 20, 2026</td>
+                            <td>42 Rejected</td>
+                            <td><span style="color: var(--danger);">✖ Blocked</span></td>
+                            <td><button class="btn-action" onclick="toggleBlock(this)">Approve</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="view-analytics" class="view-section" style="display:none;">
+            <div class="analytics-header" style="margin-bottom: 20px;">
+                <h2 style="color: var(--accent-admin);">📊 Analytics & Reports</h2>
+                <p style="color: var(--text-muted);">Real-time insights and performance metrics</p>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="analytics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                <!-- Complaint Trends Chart -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="color: var(--accent-admin);">Complaint Trends (Last 7 Days)</h3>
+                    </div>
+                    <canvas id="trendsChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Status Distribution Chart -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="color: var(--accent-admin);">Status Distribution</h3>
+                    </div>
+                    <canvas id="statusChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Priority Distribution Chart -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="color: var(--accent-admin);">Priority Distribution</h3>
+                    </div>
+                    <canvas id="priorityChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Department Performance Chart -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="color: var(--accent-admin);">Department Performance</h3>
+                    </div>
+                    <canvas id="departmentChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <!-- Key Metrics Cards -->
+            <div class="stats-grid" style="margin-bottom: 20px;">
+                <div class="stat-card">
+                    <h3>Total Complaints</h3>
+                    <div class="value" id="analyticsTotal" style="font-size: 2rem; font-weight: bold;">0</div>
+                    <div style="color: #64748b; font-size: 0.9rem;">All time</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Resolution Rate</h3>
+                    <div class="value" id="analyticsResolutionRate" style="font-size: 2rem; font-weight: bold; color: #10b981;">0%</div>
+                    <div style="color: #64748b; font-size: 0.9rem;">Complaints resolved</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Avg Resolution Time</h3>
+                    <div class="value" id="analyticsAvgTime" style="font-size: 2rem; font-weight: bold; color: #3b82f6;">0h</div>
+                    <div style="color: #64748b; font-size: 0.9rem;">Hours per complaint</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Citizen Satisfaction</h3>
+                    <div class="value" id="analyticsSatisfaction" style="font-size: 2rem; font-weight: bold; color: #f59e0b;">0%</div>
+                    <div style="color: #64748b; font-size: 0.9rem;">Based on ratings</div>
+                </div>
+            </div>
+
+            <!-- Export Options -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3 style="color: var(--accent-admin);">Export Reports</h3>
+                </div>
+                <div style="display: flex; gap: 15px; padding: 20px;">
+                    <button class="btn-action" onclick="exportReport('pdf')" style="background: #ef4444;">📄 Export as PDF</button>
+                    <button class="btn-action" onclick="exportReport('excel')" style="background: #10b981;">📊 Export as Excel</button>
+                    <button class="btn-action" onclick="exportReport('csv')" style="background: #3b82f6;">📋 Export as CSV</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Officer Modal -->
+    <div class="modal-overlay hidden" id="addOfficerModal">
+        <div class="auth-card modal-card" style="margin: 20px; max-width: 500px;">
+            <button class="close-modal" onclick="closeAddOfficerModal()">&times;</button>
+            <div class="auth-header">
+                <h1>Add New Officer</h1>
+                <p>Create a new officer account for the system</p>
+            </div>
+
+            <form id="addOfficerForm" onsubmit="addOfficer(event)">
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>First Name</label>
+                        <input type="text" id="officerFirstName" class="form-input" required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Last Name</label>
+                        <input type="text" id="officerLastName" class="form-input" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="officerEmail" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="officerPassword" class="form-input" minlength="6" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Department</label>
+                    <select id="officerDepartment" class="form-select" required>
+                        <option value="">Select Department...</option>
+                        <option value="Civil Works (Roads)">Civil Works (Roads)</option>
+                        <option value="Waste Management">Waste Management</option>
+                        <option value="Water Supply">Water Supply</option>
+                        <option value="Electricity">Electricity</option>
+                        <option value="Health & Sanitation">Health & Sanitation</option>
+                        <option value="Traffic Management">Traffic Management</option>
+                        <option value="Public Safety">Public Safety</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="addOfficerBtn" style="background: var(--accent-admin);">Create Officer Account</button>
+            </form>
+        </div>
+    </div>
+
+</body>
+
+</html>

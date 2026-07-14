@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Citizen Dashboard - Smart City Complaint System</title>
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/data.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/fileUpload.js"></script>
+    <script src="js/citizen.js"></script>
+</head>
+
+<body class="citizen-theme">
+    <aside class="sidebar">
+        <h2>Smart City</h2>
+        <ul class="nav-links">
+            <li><a href="#" class="active" onclick="switchView('dashboard', event)">My Dashboard</a></li>
+            <li><a href="#" onclick="switchView('lodge', event)">Lodge Complaint</a></li>
+            <li><a href="#" onclick="switchView('complaints', event)">My Complaints</a></li>
+            <li><a href="#" onclick="switchView('profile', event)">Profile Settings</a></li>
+            <li style="margin-top: auto;"><a href="#" onclick="logout(); return false;"
+                    style="color: var(--danger);">Logout</a></li>
+        </ul>
+    </aside>
+
+    <main class="main-content">
+        <header>
+            <div>
+                <h1 id="welcomeHeader">Welcome back, Citizen!</h1>
+                <p style="color: var(--text-muted);">Manage your civic requests and issues.</p>
+            </div>
+            <div class="user-info">
+                <div class="notification-icon" id="notificationIcon" onclick="toggleNotificationDropdown()">
+                    🔔
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                    <div class="notification-dropdown" id="notificationDropdown">
+                        <div class="notification-header">
+                            <span class="notification-title">Notifications</span>
+                            <button onclick="markAllAsRead()" style="background: none; border: none; color: var(--accent-citizen); cursor: pointer; font-size: 12px;">Mark all read</button>
+                        </div>
+                        <div class="notification-list" id="notificationList">
+                            <!-- Notifications will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="avatar" id="userAvatar" style="background-color: var(--accent-citizen);">C</div>
+            </div>
+        </header>
+
+        <div class="success-banner" id="successMsg">
+            🎉 Your complaint has been successfully lodged! Reference ID: #C-NEW88.
+        </div>
+
+        <div class="dashboard-wrapper">
+            <!-- Main Content Area -->
+            <div class="main-column">
+
+                <div id="view-dashboard" class="view-section">
+                    <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                        <div
+                            style="flex: 1; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <h3 style="font-size: 1rem; color: #64748b; margin-bottom: 10px;">Total Complaints</h3>
+                            <div id="citTotal"
+                                style="font-size: 2rem; font-weight: bold; color: var(--accent-citizen);">0</div>
+                        </div>
+                        <div
+                            style="flex: 1; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <h3 style="font-size: 1rem; color: #64748b; margin-bottom: 10px;">Resolved</h3>
+                            <div id="citResolved" style="font-size: 2rem; font-weight: bold; color: var(--success);">0
+                            </div>
+                        </div>
+                        <div
+                            style="flex: 1; background: white; padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <h3 style="font-size: 1rem; color: #64748b; margin-bottom: 10px;">Pending</h3>
+                            <div id="citPending" style="font-size: 2rem; font-weight: bold; color: var(--warning);">0
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 20px;">
+
+                        <!-- Recent Activity / Latest Complaint Widget -->
+                        <div class="panel" style="flex: 2; margin-bottom: 0;">
+                            <div class="panel-header"
+                                style="padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 15px;">
+                                <h3 style="font-size: 1.1rem; color: var(--text-dark);">Recent Activity</h3>
+                            </div>
+                            <div id="dashboardRecentActivity"
+                                style="min-height: 150px; display: flex; flex-direction: column; justify-content: center;">
+                                <!-- Populated by JS -->
+                                <div style="text-align: center; color: var(--text-muted); padding: 20px;">
+                                    Loading recent activity...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions Widget -->
+                        <div class="panel"
+                            style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 0;">
+                            <div class="panel-header"
+                                style="padding-bottom: 10px; border-bottom: 1px solid #cbd5e1; margin-bottom: 15px;">
+                                <h3 style="font-size: 1.1rem; color: var(--text-dark);">Quick Actions</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <button onclick="switchView('lodge', event)"
+                                    style="width: 100%; padding: 12px; background: var(--accent-citizen); color: white; border: none; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s;">+
+                                    New Complaint</button>
+                                <button onclick="switchView('complaints', event)"
+                                    style="width: 100%; padding: 12px; background: white; color: var(--text-dark); border: 1px solid #cbd5e1; border-radius: 8px; font-weight: 500; cursor: pointer; transition: background 0.2s;">View
+                                    History</button>
+                            </div>
+                            <div
+                                style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-radius: 8px; border: 1px solid #bae6fd;">
+                                <h4 style="color: #0369a1; font-size: 0.9rem; margin-bottom: 5px;">Need Help?</h4>
+                                <p style="color: #0c4a6e; font-size: 0.8rem; line-height: 1.4;">Contact the city support
+                                    helpline at <strong>1-800-CITY-HELP</strong> for immediate assistance with critical
+                                    urban issues.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div id="view-lodge" class="view-section" style="display:none;">
+                    <!-- Lodge Complaint Form Panel -->
+                    <div class="panel" id="lodge-form">
+                        <div class="panel-header">
+                            <h3 style="color: var(--text-dark);">Lodge a New Complaint</h3>
+                        </div>
+
+                        <form id="complaintForm" onsubmit="submitForm(event)">
+                            <div class="form-group">
+                                <label class="form-label">Auto Complaint ID</label>
+                                <input type="text" class="form-input" id="complaintIdInput" readonly
+                                    style="background-color: #e2e8f0; font-weight: bold; color: #475569;">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Date</label>
+                                <input type="text" class="form-input" id="dateInput" readonly
+                                    style="background-color: #e2e8f0; color: #475569;">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Department</label>
+                                <select class="form-select" id="deptInput" required>
+                                    <option value="">Select department...</option>
+                                    <option value="Civil Works (Roads)">Civil Works (Roads)</option>
+                                    <option value="Water Supply">Water Supply</option>
+                                    <option value="Electricity">Electricity</option>
+                                    <option value="Waste Management">Waste Management</option>
+                                    <option value="Health & Sanitation">Health & Sanitation</option>
+                                    <option value="Traffic Management">Traffic Management</option>
+                                    <option value="Public Safety">Public Safety</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Priority Level</label>
+                                <select class="form-select" id="priorityInput" required>
+                                    <option value="">Select priority...</option>
+                                    <option value="low">🟢 Low - Minor issue, no immediate danger</option>
+                                    <option value="medium">🟡 Medium - Needs attention but not urgent</option>
+                                    <option value="high">🟠 High - Significant impact, needs quick action</option>
+                                    <option value="urgent">🔴 Urgent - Critical issue, immediate attention required</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-textarea" id="descInput"
+                                    placeholder="Describe the issue in detail..." required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Map Coordinates</label>
+                                <div id="map"
+                                    style="height: 250px; border-radius: 8px; border: 1px solid #cbd5e1; z-index: 1; margin-bottom: 10px;">
+                                </div>
+                                <input type="text" class="form-input" id="mapCoordsInput"
+                                    placeholder="Search or click on the map to set a pin..." readonly
+                                    style="background-color: #f8fafc; color: #475569; font-family: monospace;">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Written Address / Landmark</label>
+                                <input type="text" class="form-input" id="locationInput"
+                                    placeholder="Enter manual landmark or street address" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Attach Files/Proof (Optional)</label>
+                                <div class="file-upload-area" id="fileUploadArea">
+                                    <div class="file-upload-drop-zone" id="dropZone">
+                                        <div class="upload-icon">�</div>
+                                        <p class="upload-text">Drag & drop files here or click to browse</p>
+                                        <p class="upload-subtitle">Supported: Images (PNG, JPG, GIF), Videos (MP4, MOV), Documents (PDF, DOC, DOCX)</p>
+                                        <p class="upload-limit">Maximum file size: 10MB per file, up to 5 files</p>
+                                    </div>
+                                    <input type="file" id="fileInput" multiple accept="image/*,video/*,.pdf,.doc,.docx" style="display: none;">
+                                </div>
+                                <div class="file-list" id="fileList" style="display: none;">
+                                    <h4>Selected Files:</h4>
+                                    <div id="fileItems"></div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="submit-btn" id="submitBtn">Submit Complaint</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="view-complaints" class="view-section" style="display:none;">
+                    <!-- My Complaints List Panel -->
+                    <div class="panel" id="my-complaints">
+                        <div class="panel-header">
+                            <h3 style="color: var(--text-dark);">My Complaints</h3>
+                            <a href="#"
+                                style="color: var(--accent-citizen); text-decoration: none; font-size: 0.9rem; font-weight: 500;">View
+                                All</a>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Priority</th>
+                                    <th>Department</th>
+                                    <th>Date / Time</th>
+                                    <th>Status</th>
+                                    <th>Remarks</th>
+                                    <th>Proof</th>
+                                </tr>
+                            </thead>
+                            <tbody id="complaintsTableBody">
+                                <!-- Complaints will be loaded here dynamically via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-profile" class="view-section" style="display:none;">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h3 style="color: var(--text-dark);">Profile Settings</h3>
+                        </div>
+                        <div style="padding: 20px;">
+                            <p style="color: var(--text-muted); margin-bottom: 20px;">Manage your demographic details.
+                            </p>
+                            <div style="display: flex; gap: 20px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" class="form-input" id="profileName" value="">
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label class="form-label">Citizen ID</label>
+                                    <input type="text" class="form-input" id="profileId" value="" readonly
+                                        style="background-color: #f8fafc; font-family: monospace; font-weight: 600;">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-input" id="profileEmail" value="">
+                            </div>
+
+                            <button class="submit-btn"
+                                style="background-color: var(--accent-citizen); border: none; padding: 12px; width: 100%; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; transition: 0.2s;"
+                                onclick="updateProfile(event)">Save Profile Changes</button>
+                            <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
+                                <div
+                                    style="flex: 1; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+                                    <div style="font-size: 0.85rem; color: #64748b;">Account Status</div>
+                                    <div id="profileStatus" style="font-weight: bold; margin-top: 5px;">-</div>
+                                </div>
+                                <div
+                                    style="flex: 1; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; background: white;">
+                                    <div style="font-size: 0.85rem; color: #64748b;">Member Since</div>
+                                    <div id="profileJoined" style="font-weight: bold; margin-top: 5px; color: #334155;">
+                                        -</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Side Column for Notifications -->
+            <div class="side-column">
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3 style="color: var(--text-dark);">Notifications</h3>
+                        <span
+                            style="background: var(--danger); color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: 600;">2
+                            New</span>
+                    </div>
+                    <ul class="notification-list">
+                        <li class="notification-item unread">
+                            <div class="notify-title">Status Update: #C-8210</div>
+                            <div class="notify-desc">Your waste collection complaint is now marked as "In Progress". A
+                                team has been dispatched.</div>
+                            <span class="notify-time">2 hours ago</span>
+                        </li>
+                        <li class="notification-item unread">
+                            <div class="notify-title">Alert: Planned Power Outage</div>
+                            <div class="notify-desc">Sector 4 will experience a power cut from 12PM to 3PM tomorrow for
+                                maintenance.</div>
+                            <span class="notify-time">5 hours ago</span>
+                        </li>
+                        <li class="notification-item">
+                            <div class="notify-title">Resolved: #C-7901</div>
+                            <div class="notify-desc">The street light outage you reported has been fixed. Thank you!
+                            </div>
+                            <span class="notify-time">2 days ago</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+
+</html>
