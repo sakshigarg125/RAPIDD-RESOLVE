@@ -28,4 +28,4 @@ const complaintSchema = new mongoose.Schema({
   feedbackSubmitted: { type: Boolean, default: false }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Complaint', complaintSchema);cd
+module.exports = mongoose.model('Complaint', complaintSchema);
